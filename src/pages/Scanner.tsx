@@ -27,7 +27,7 @@ export const Scanner: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCategoryId, setNewCategoryId] = useState('');
-  const [newBaseUnit, setNewBaseUnit] = useState('pza');
+  const [newBaseUnit, setNewBaseUnit] = useState('unidad');
   const [newPurchasePrice, setNewPurchasePrice] = useState('0');
   const [newSalePrice, setNewSalePrice] = useState('0');
   const [newMinStock, setNewMinStock] = useState('5');
