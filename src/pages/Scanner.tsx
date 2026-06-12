@@ -64,7 +64,7 @@ export const Scanner: React.FC = () => {
       setScannedProduct(null);
       setNewName('');
       setNewCategoryId('');
-      setNewBaseUnit('pza');
+      setNewBaseUnit('unidad');
       setNewPurchasePrice('');
       setNewSalePrice('');
       setNewMinStock('5');
