@@ -73,7 +73,7 @@ export const Products: React.FC = () => {
     setProdCategoryId('');
     setOriginalCategoryId('');
     setOriginalInternalCode('');
-    setProdBaseUnit('pza');
+    setProdBaseUnit('unidad');
     setProdPurchasePrice('');
     setProdSalePrice('');
     setProdMinStock('5');
