@@ -232,37 +232,34 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        <div style={{ marginTop: '16px', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setShowConfig(!showConfig)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--primary)',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            {showConfig ? 'Ocultar Configuración de Nube' : 'Mostrar Configuración de Nube'}
-          </button>
-        </div>
+        {!isUsingEnvCredentials() && (
+          <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setShowConfig(!showConfig)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--primary)',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              {showConfig ? 'Ocultar Configuración de Nube' : 'Mostrar Configuración de Nube'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Collapsible Supabase Configuration Card */}
-      {showConfig && (
+      {!isUsingEnvCredentials() && showConfig && (
         <div className="card" style={{ padding: '20px', borderStyle: 'dashed', animation: 'slide-up 0.2s ease-out' }}>
           <form onSubmit={handleSaveConfig}>
             <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--text-primary)' }}>
               Configuración de Supabase (Base de Datos)
             </h3>
-            {isUsingEnvCredentials() && (
-              <p style={{ fontSize: '11px', color: 'var(--success)', backgroundColor: 'var(--success-light)', padding: '8px 10px', borderRadius: '4px', marginBottom: '12px', fontWeight: 500, border: '1px solid rgba(5, 150, 105, 0.1)' }}>
-                ✓ El sistema tiene credenciales globales preconfiguradas. Modifique estos campos solo si desea usar una base de datos propia.
-              </p>
-            )}
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
               Para conectar con tu propia nube, ingresa la URL y la clave anónima del proyecto de Supabase.
             </p>

@@ -249,63 +249,62 @@ export const Settings: React.FC = () => {
           </div>
         )}
 
-        <div style={{ marginTop: '16px', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setShowConfigPanel(!showConfigPanel)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--primary)',
-              fontSize: '12px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            {showConfigPanel ? 'Ocultar Credenciales de Supabase' : 'Modificar Credenciales de Supabase'}
-          </button>
-        </div>
+        {!isUsingEnvCredentials() && (
+          <>
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowConfigPanel(!showConfigPanel)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--primary)',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {showConfigPanel ? 'Ocultar Credenciales de Supabase' : 'Modificar Credenciales de Supabase'}
+              </button>
+            </div>
 
-        {showConfigPanel && (
-          <form onSubmit={handleSaveCredentials} style={{ marginTop: '16px', borderTop: '1px dashed var(--border)', paddingTop: '16px' }}>
-            {isUsingEnvCredentials() && (
-              <p style={{ fontSize: '11px', color: 'var(--success)', backgroundColor: 'var(--success-light)', padding: '8px 10px', borderRadius: '4px', marginBottom: '12px', fontWeight: 500, border: '1px solid rgba(5, 150, 105, 0.1)' }}>
-                ✓ El sistema tiene credenciales globales preconfiguradas. Modifique estos campos solo si desea usar una base de datos propia.
-              </p>
+            {showConfigPanel && (
+              <form onSubmit={handleSaveCredentials} style={{ marginTop: '16px', borderTop: '1px dashed var(--border)', paddingTop: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">URL del Proyecto</label>
+                  <input 
+                    type="url" 
+                    className="input-field" 
+                    placeholder="https://xxxx.supabase.co"
+                    value={supabaseUrl}
+                    onChange={e => setSupabaseUrl(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label className="form-label">Clave Anónima (Anon Key)</label>
+                  <input 
+                    type="password" 
+                    className="input-field" 
+                    placeholder="Clave anónima"
+                    value={supabaseAnonKey}
+                    onChange={e => setSupabaseAnonKey(e.target.value)}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+                  Actualizar Credenciales
+                </button>
+              </form>
             )}
-            <div className="form-group">
-              <label className="form-label">URL del Proyecto</label>
-              <input 
-                type="url" 
-                className="input-field" 
-                placeholder="https://xxxx.supabase.co"
-                value={supabaseUrl}
-                onChange={e => setSupabaseUrl(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label className="form-label">Clave Anónima (Anon Key)</label>
-              <input 
-                type="password" 
-                className="input-field" 
-                placeholder="Clave anónima"
-                value={supabaseAnonKey}
-                onChange={e => setSupabaseAnonKey(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-              Actualizar Credenciales
-            </button>
-          </form>
-        )}
 
-        {configSuccess && (
-          <div className="badge badge-success text-center mt-4" style={{ width: '100%', padding: '6px', justifyContent: 'center' }}>
-            Credenciales actualizadas.
-          </div>
+            {configSuccess && (
+              <div className="badge badge-success text-center mt-4" style={{ width: '100%', padding: '6px', justifyContent: 'center' }}>
+                Credenciales actualizadas.
+              </div>
+            )}
+          </>
         )}
       </div>
 
