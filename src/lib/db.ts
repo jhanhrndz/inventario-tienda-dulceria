@@ -127,13 +127,12 @@ export async function seedInitialData() {
     });
     
     const categories = [
-      { id: 'cat-general-otros', name: 'General / Otros', sort_order: 1 },
-      { id: 'cat-lacteos', name: 'Lácteos', sort_order: 2 },
-      { id: 'cat-dulces', name: 'Dulces', sort_order: 3 },
-      { id: 'cat-paletas', name: 'Paletas', sort_order: 4 },
-      { id: 'cat-mecatos', name: 'Mecatos', sort_order: 5 },
-      { id: 'cat-bebidas', name: 'Bebidas', sort_order: 6 },
-      { id: 'cat-frutas', name: 'Frutas', sort_order: 7 },
+      { id: 'cat-lacteos', name: 'Lácteos', sort_order: 1 },
+      { id: 'cat-dulces', name: 'Dulces', sort_order: 2 },
+      { id: 'cat-paletas', name: 'Paletas', sort_order: 3 },
+      { id: 'cat-mecatos', name: 'Mecatos', sort_order: 4 },
+      { id: 'cat-bebidas', name: 'Bebidas', sort_order: 5 },
+      { id: 'cat-frutas', name: 'Frutas', sort_order: 6 },
     ];
     
     for (const cat of categories) {
