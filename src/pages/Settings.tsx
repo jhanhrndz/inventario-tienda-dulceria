@@ -3,7 +3,7 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { exportToExcel } from '../lib/services/exportService';
 import { type Category, type UnitOfMeasure } from '../lib/db';
 import { getErrorMessage } from '../lib/utils';
-import { getSupabaseCredentials, saveSupabaseCredentials } from '../lib/supabaseClient';
+import { getSupabaseCredentials, saveSupabaseCredentials, isUsingEnvCredentials } from '../lib/supabaseClient';
 
 export const Settings: React.FC = () => {
   const { 
@@ -209,8 +209,14 @@ export const Settings: React.FC = () => {
         
         {user && (
           <div style={{ margin: '10px 0 16px 0', fontSize: '13px' }}>
-            <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>
+            <div style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
               <strong>Usuario:</strong> {user.email}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isUsingEnvCredentials() ? 'var(--success)' : 'var(--primary)' }}></span>
+              <span>
+                Conexión: <strong>{isUsingEnvCredentials() ? 'Configuración Global (Vercel/.env)' : 'Configuración Personalizada'}</strong>
+              </span>
             </div>
             <div style={{ color: 'var(--text-muted)' }}>
               Los cambios se guardan localmente y se sincronizan automáticamente.
@@ -263,6 +269,11 @@ export const Settings: React.FC = () => {
 
         {showConfigPanel && (
           <form onSubmit={handleSaveCredentials} style={{ marginTop: '16px', borderTop: '1px dashed var(--border)', paddingTop: '16px' }}>
+            {isUsingEnvCredentials() && (
+              <p style={{ fontSize: '11px', color: 'var(--success)', backgroundColor: 'var(--success-light)', padding: '8px 10px', borderRadius: '4px', marginBottom: '12px', fontWeight: 500, border: '1px solid rgba(5, 150, 105, 0.1)' }}>
+                ✓ El sistema tiene credenciales globales preconfiguradas. Modifique estos campos solo si desea usar una base de datos propia.
+              </p>
+            )}
             <div className="form-group">
               <label className="form-label">URL del Proyecto</label>
               <input 

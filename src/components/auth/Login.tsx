@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSupabaseClient, isSupabaseConfigured, saveSupabaseCredentials, getSupabaseCredentials } from '../../lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, saveSupabaseCredentials, getSupabaseCredentials, isUsingEnvCredentials } from '../../lib/supabaseClient';
 import { useInventoryStore } from '../../store/useInventoryStore';
 
 interface LoginProps {
@@ -258,6 +258,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--text-primary)' }}>
               Configuración de Supabase (Base de Datos)
             </h3>
+            {isUsingEnvCredentials() && (
+              <p style={{ fontSize: '11px', color: 'var(--success)', backgroundColor: 'var(--success-light)', padding: '8px 10px', borderRadius: '4px', marginBottom: '12px', fontWeight: 500, border: '1px solid rgba(5, 150, 105, 0.1)' }}>
+                ✓ El sistema tiene credenciales globales preconfiguradas. Modifique estos campos solo si desea usar una base de datos propia.
+              </p>
+            )}
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
               Para conectar con tu propia nube, ingresa la URL y la clave anónima del proyecto de Supabase.
             </p>
