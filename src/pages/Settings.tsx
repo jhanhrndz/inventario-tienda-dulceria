@@ -3,6 +3,7 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { exportToExcel } from '../lib/services/exportService';
 import { type Category, type UnitOfMeasure } from '../lib/db';
 import { getErrorMessage } from '../lib/utils';
+import { getSupabaseCredentials, saveSupabaseCredentials } from '../lib/supabaseClient';
 
 export const Settings: React.FC = () => {
   const { 
@@ -15,7 +16,12 @@ export const Settings: React.FC = () => {
     updateUnit,
     deleteUnit,
     loading, 
-    error 
+    error,
+    user,
+    logout,
+    triggerSync,
+    isSyncing,
+    isOnline
   } = useInventoryStore();
 
   // Active tab state to switch between Categories and Units
@@ -128,6 +134,50 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
+  const [configSuccess, setConfigSuccess] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+
+  // Load credentials on mount
+  React.useEffect(() => {
+    const creds = getSupabaseCredentials();
+    setSupabaseUrl(creds.url);
+    setSupabaseAnonKey(creds.anonKey);
+  }, []);
+
+  const handleSaveCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabaseUrl.trim() || !supabaseAnonKey.trim()) return;
+
+    try {
+      saveSupabaseCredentials(supabaseUrl, supabaseAnonKey);
+      setConfigSuccess(true);
+      setTimeout(() => setConfigSuccess(false), 3000);
+      setShowConfigPanel(false);
+    } catch (err) {
+      alert('Error al guardar credenciales: ' + getErrorMessage(err));
+    }
+  };
+
+  const handleManualSync = async () => {
+    setSyncStatusMsg('Sincronizando...');
+    try {
+      await triggerSync();
+      setSyncStatusMsg('Sincronización completada con éxito.');
+      setTimeout(() => setSyncStatusMsg(null), 3000);
+    } catch (err) {
+      setSyncStatusMsg('Error al sincronizar: ' + getErrorMessage(err));
+    }
+  };
+
+  const handleLogout = async () => {
+    if (confirm('¿Estás seguro de que deseas cerrar sesión? Esto limpiará TODOS los datos guardados en este dispositivo para proteger tu cuenta.')) {
+      await logout();
+    }
+  };
+
   const handleExport = async () => {
     setExporting(true);
     setExportSuccess(false);
@@ -147,6 +197,106 @@ export const Settings: React.FC = () => {
       <h2 className="mb-4" style={{ fontSize: '20px', fontWeight: 600 }}>
         Ajustes del Sistema
       </h2>
+
+      {/* Cloud Sync & Session Section */}
+      <div className="card" style={{ marginBottom: '16px' }}>
+        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Sincronización en la Nube</span>
+          <span style={{ fontSize: '11px', fontWeight: 'normal' }} className={`badge ${isOnline ? 'badge-success' : 'badge-danger'}`}>
+            {isOnline ? 'En Línea' : 'Sin Conexión'}
+          </span>
+        </h3>
+        
+        {user && (
+          <div style={{ margin: '10px 0 16px 0', fontSize: '13px' }}>
+            <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              <strong>Usuario:</strong> {user.email}
+            </div>
+            <div style={{ color: 'var(--text-muted)' }}>
+              Los cambios se guardan localmente y se sincronizan automáticamente.
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+          <button 
+            onClick={handleManualSync} 
+            disabled={isSyncing || !isOnline}
+            className="btn btn-primary"
+            style={{ width: '100%' }}
+          >
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
+          </button>
+
+          <button 
+            onClick={handleLogout} 
+            className="btn btn-secondary"
+            style={{ width: '100%', borderColor: 'rgba(220, 38, 38, 0.3)', color: 'var(--danger)' }}
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+
+        {syncStatusMsg && (
+          <div style={{ marginTop: '12px', fontSize: '12px', color: syncStatusMsg.includes('Error') ? 'var(--danger)' : 'var(--success)', textAlign: 'center', fontWeight: 500 }}>
+            {syncStatusMsg}
+          </div>
+        )}
+
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setShowConfigPanel(!showConfigPanel)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--primary)',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+          >
+            {showConfigPanel ? 'Ocultar Credenciales de Supabase' : 'Modificar Credenciales de Supabase'}
+          </button>
+        </div>
+
+        {showConfigPanel && (
+          <form onSubmit={handleSaveCredentials} style={{ marginTop: '16px', borderTop: '1px dashed var(--border)', paddingTop: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">URL del Proyecto</label>
+              <input 
+                type="url" 
+                className="input-field" 
+                placeholder="https://xxxx.supabase.co"
+                value={supabaseUrl}
+                onChange={e => setSupabaseUrl(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label">Clave Anónima (Anon Key)</label>
+              <input 
+                type="password" 
+                className="input-field" 
+                placeholder="Clave anónima"
+                value={supabaseAnonKey}
+                onChange={e => setSupabaseAnonKey(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+              Actualizar Credenciales
+            </button>
+          </form>
+        )}
+
+        {configSuccess && (
+          <div className="badge badge-success text-center mt-4" style={{ width: '100%', padding: '6px', justifyContent: 'center' }}>
+            Credenciales actualizadas.
+          </div>
+        )}
+      </div>
 
       {/* Backup Section */}
       <div className="card">

@@ -3,8 +3,10 @@ import { categoryRepository } from '../lib/repositories/categoryRepository';
 import { productRepository, type ProductWithDetails } from '../lib/repositories/productRepository';
 import { inventoryRepository, type MovementWithDetails, type MovementInput } from '../lib/repositories/inventoryRepository';
 import { unitRepository } from '../lib/repositories/unitRepository';
-import { type Category, type Product, type UnitOfMeasure, type UnitConversion, seedInitialData } from '../lib/db';
+import { type Category, type Product, type UnitOfMeasure, type UnitConversion, seedInitialData, db } from '../lib/db';
 import { getErrorMessage } from '../lib/utils';
+import { getSupabaseClient } from '../lib/supabaseClient';
+import { syncService } from '../lib/services/syncService';
 
 interface InventoryState {
   products: ProductWithDetails[];
@@ -15,9 +17,13 @@ interface InventoryState {
   error: string | null;
   isOnline: boolean;
   isSyncing: boolean;
+  user: any | null;
+  isAuthenticated: boolean;
 
   // Initializer
   initStore: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+  logout: () => Promise<void>;
 
   // Category Actions
   loadCategories: () => Promise<void>;
@@ -60,14 +66,87 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   error: null,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   isSyncing: false,
+  user: null,
+  isAuthenticated: false,
+
+  checkAuth: async () => {
+    // 1. Check Supabase active session
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        set({ user: session.user, isAuthenticated: true });
+        get().triggerSync();
+        return;
+      }
+    }
+
+    // 2. Fallback to offline cached session
+    const cachedUser = localStorage.getItem('offline_session_user');
+    const isActive = localStorage.getItem('offline_session_active') === 'true';
+    if (isActive && cachedUser) {
+      set({ user: JSON.parse(cachedUser), isAuthenticated: true });
+    } else {
+      set({ user: null, isAuthenticated: false });
+    }
+  },
+
+  logout: async () => {
+    set({ loading: true });
+    try {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.warn('Supabase signOut failed or offline:', err);
+    }
+
+    // Clear local storage items
+    localStorage.removeItem('offline_session_user');
+    localStorage.removeItem('offline_session_active');
+    
+    // Clear last sync timestamps
+    const keys = Object.keys(localStorage);
+    for (const key of keys) {
+      if (key.startsWith('supabase_last_sync_timestamp')) {
+        localStorage.removeItem(key);
+      }
+    }
+
+    try {
+      // Clear IndexedDB tables
+      await Promise.all([
+        db.products.clear(),
+        db.categories.clear(),
+        db.stock.clear(),
+        db.unit_conversions.clear(),
+        db.inventory_movements.clear(),
+        db.sync_queue.clear(),
+        db.units.clear(),
+      ]);
+    } catch (err) {
+      console.error('Failed to clear Dexie on logout:', err);
+    }
+
+    set({
+      products: [],
+      categories: [],
+      movements: [],
+      units: [],
+      user: null,
+      isAuthenticated: false,
+      loading: false
+    });
+  },
 
   initStore: async () => {
     set({ loading: true, error: null });
     try {
-      // 1. Seed database with defaults
+      // 1. Seed database with defaults (if empty)
       await seedInitialData();
 
-      // 2. Fetch everything
+      // 2. Fetch everything from Dexie
       await Promise.all([
         get().loadCategories(),
         get().loadProducts(),
@@ -75,7 +154,12 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         get().loadUnits(),
       ]);
 
-      // 3. Listen to connection changes
+      // 3. Trigger initial background sync if online
+      if (get().isOnline) {
+        get().triggerSync();
+      }
+
+      // 4. Listen to connection changes
       if (typeof window !== 'undefined') {
         window.addEventListener('online', () => {
           set({ isOnline: true });
@@ -272,12 +356,27 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   triggerSync: async () => {
-    if (get().isSyncing) return;
+    const { user, isOnline, isSyncing } = get();
+    if (!user || !isOnline || isSyncing) return;
+
     set({ isSyncing: true });
-    
-    // Simulate minor sync network lag
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    set({ isSyncing: false });
+    try {
+      const result = await syncService.sync(user.id);
+      if (result.success) {
+        // If remote updates were pulled, reload local state
+        if (result.pulledCount && result.pulledCount > 0) {
+          await Promise.all([
+            get().loadCategories(),
+            get().loadProducts(),
+            get().loadMovements(),
+            get().loadUnits(),
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error('Error in triggerSync background service:', err);
+    } finally {
+      set({ isSyncing: false });
+    }
   }
 }));

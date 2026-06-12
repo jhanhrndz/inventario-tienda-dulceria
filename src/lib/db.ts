@@ -3,6 +3,7 @@ import Dexie, { type Table } from 'dexie';
 // --- Interfaces ---
 
 export interface SyncableEntity {
+  user_id?: string;
   _syncStatus?: 'synced' | 'pending' | 'conflicted';
   _lastModified?: number;
   _deletedAt?: number;
